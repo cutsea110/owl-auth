@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, OverloadedStrings, FlexibleContexts #-}
 module Yesod.Auth.Owl
        ( authOwl
        , YesodAuthOwl(..)
@@ -42,18 +42,18 @@ loginR = PluginR "owl" ["login"]
 setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
-authOwl :: YesodAuthOwl m => AuthPlugin m
+authOwl :: (YesodAuthOwl m, RedirectUrl Auth (Route m)) => AuthPlugin m
 authOwl =  AuthPlugin "owl" dispatch login
   where
     dispatch "POST" ["login"] = do
-      (ident, pass) <- (,) <$> (runInputPost $ ireq textField "ident")
+      (ident, pass) <- lift $ (,) <$> (runInputPost $ ireq textField "ident")
                            <*> (runInputPost $ ireq passwordField "password")
-      v <- owlInteract (AuthReq ident pass) endpoint_auth
+      v <- lift $ owlInteract (AuthReq ident pass) endpoint_auth
       case fromJSON v of
         Success (A.Accepted i e) ->
-          setCreds True $ Creds "owl" ident []
+          lift $ setCreds True $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
-          P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
+          lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
           toParent <- getRouteToParent
           redirect $ toParent LoginR
         Error msg -> invalidArgs [T.pack msg]
@@ -76,7 +76,7 @@ authOwl =  AuthPlugin "owl" dispatch login
       <input type=submit .btn.btn-primary value=Login>
 |]
 
-getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) RepHtml
+getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) Html
 getPasswordR = do
   authToParent <- getRouteToParent
   lift $ defaultLayout $ do
