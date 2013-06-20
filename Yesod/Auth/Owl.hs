@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, OverloadedStrings, FlexibleContexts #-}
 module Yesod.Auth.Owl
        ( authOwl
        , YesodAuthOwl(..)
@@ -28,13 +28,13 @@ import Yesod.Auth.Owl.Util
 
 type ServiceURL = String
 
-class YesodAuth m => YesodAuthOwl m where
-  getOwlIdent :: GHandler Auth m Text
-  clientId :: m -> SB.ByteString
-  owlPubkey :: m -> PublicKey
-  myPrivkey :: m -> PrivateKey
-  endpoint_auth :: m -> ServiceURL
-  endpoint_pass :: m -> ServiceURL
+class YesodAuth site => YesodAuthOwl site where
+  getOwlIdent :: HandlerT Auth (HandlerT site IO) Text
+  clientId :: site -> SB.ByteString
+  owlPubkey :: site -> PublicKey
+  myPrivkey :: site -> PrivateKey
+  endpoint_auth :: site -> ServiceURL
+  endpoint_pass :: site -> ServiceURL
 
 loginR :: AuthRoute
 loginR = PluginR "owl" ["login"]
@@ -43,26 +43,25 @@ setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
 authOwl :: YesodAuthOwl m => AuthPlugin m
-authOwl =  AuthPlugin "owl" dispatch login
+authOwl = AuthPlugin "owl" dispatch login
   where
     dispatch "POST" ["login"] = do
-      (ident, pass) <- (,) <$> (runInputPost $ ireq textField "ident")
+      (ident, pass) <- lift $ (,) <$> (runInputPost $ ireq textField "ident")
                            <*> (runInputPost $ ireq passwordField "password")
-      v <- owlInteract (AuthReq ident pass) endpoint_auth
+      v <- lift $ owlInteract (AuthReq ident pass) endpoint_auth
       case fromJSON v of
         Success (A.Accepted i e) ->
-          setCreds True $ Creds "owl" ident []
+          lift $ setCreds True $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
-          P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
-          toMaster <- getRouteToMaster
-          redirect $ toMaster LoginR
+          lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
+          redirect LoginR
         Error msg -> invalidArgs [T.pack msg]
     dispatch "GET" ["set-password"] = getPasswordR >>= sendResponse
     dispatch "POST" ["set-password"] = postPasswordR >>= sendResponse
     dispatch _ _ = notFound
-    login authToMaster =
+    login authToParent =
       toWidget [hamlet|
-<form method="post" action="@{authToMaster loginR}" .form-horizontal>
+<form method="post" action="@{authToParent loginR}" .form-horizontal>
   <div .control-group.info>
     <label .control-label for=ident>Owl Account ID
     <div .controls>
@@ -76,13 +75,13 @@ authOwl =  AuthPlugin "owl" dispatch login
       <input type=submit .btn.btn-primary value=Login>
 |]
 
-getPasswordR :: Yesod master => GHandler Auth master RepHtml
+getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) Html
 getPasswordR = do
-  authToMaster <- getRouteToMaster
-  defaultLayout $ do
+  authToParent <- getRouteToParent
+  lift $ defaultLayout $ do
     setTitle "Set password"
     [whamlet|
-<form method="post" action="@{authToMaster setPassR}" .form-horizontal>
+<form method="post" action="@{authToParent setPassR}" .form-horizontal>
   <div .control-group.info>
     <label .control-label for=current_pass>Current Password
     <div .controls>
@@ -100,23 +99,24 @@ getPasswordR = do
       <input type=submit .btn.btn-primary value="Set password">
 |]
 
-postPasswordR :: YesodAuthOwl master => GHandler Auth master ()
+postPasswordR :: YesodAuthOwl site => HandlerT Auth (HandlerT site IO) ()
 postPasswordR = do
   uid <- getOwlIdent
-  (curp, pass, pass2) <- (,,)
+  (curp, pass, pass2) <- lift $ (,,)
                         <$> (runInputPost $ ireq passwordField "current_pass")
                         <*> (runInputPost $ ireq passwordField "new_pass")
                         <*> (runInputPost $ ireq passwordField "new_pass2")
-  v <- owlInteract (ChangePassReq uid curp pass pass2) endpoint_pass
+  v <- lift $ owlInteract (ChangePassReq uid curp pass pass2) endpoint_pass
   case fromJSON v of
     Success (CP.Accepted i e) -> do
-      P.setPNotify $ P.PNotify P.JqueryUI P.Success "success" "update password"
+      lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Success "success" "update password"
     Success (CP.Rejected i c p p2 r) -> do
-      P.setPNotify $ P.PNotify P.JqueryUI P.Error "failed" r
+      lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "failed" r
     Error msg -> invalidArgs [T.pack msg]
-  redirect . loginDest =<< getYesod
+  lift . redirect . loginDest =<< lift getYesod
 
-owlInteract :: (ToJSON a, YesodAuthOwl m) => a -> (m -> ServiceURL) -> GHandler sub m Value
+owlInteract :: (ToJSON a, YesodAuthOwl site) =>
+               a -> (site -> ServiceURL) -> HandlerT site IO Value
 owlInteract o epurl = do
   oreq <- getRequest
   y <- getYesod
