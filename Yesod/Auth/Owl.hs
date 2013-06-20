@@ -29,7 +29,7 @@ import Yesod.Auth.Owl.Util
 type ServiceURL = String
 
 class YesodAuth site => YesodAuthOwl site where
-  getOwlIdent :: HandlerT Auth (HandlerT site m) Text
+  getOwlIdent :: HandlerT Auth (HandlerT site IO) Text
   clientId :: site -> SB.ByteString
   owlPubkey :: site -> PublicKey
   myPrivkey :: site -> PrivateKey
@@ -42,8 +42,8 @@ loginR = PluginR "owl" ["login"]
 setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
-authOwl :: (YesodAuthOwl m, RedirectUrl Auth (Route m)) => AuthPlugin m
-authOwl =  AuthPlugin "owl" dispatch login
+authOwl :: YesodAuthOwl m => AuthPlugin m
+authOwl = AuthPlugin "owl" dispatch login
   where
     dispatch "POST" ["login"] = do
       (ident, pass) <- lift $ (,) <$> (runInputPost $ ireq textField "ident")
@@ -54,8 +54,7 @@ authOwl =  AuthPlugin "owl" dispatch login
           lift $ setCreds True $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
           lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
-          toParent <- getRouteToParent
-          redirect $ toParent LoginR
+          redirect LoginR
         Error msg -> invalidArgs [T.pack msg]
     dispatch "GET" ["set-password"] = getPasswordR >>= sendResponse
     dispatch "POST" ["set-password"] = postPasswordR >>= sendResponse
