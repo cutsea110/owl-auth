@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                owl-auth
-version:             0.2.1.0
+version:             0.2.2.0
 synopsis:            API for owl authentication
 -- description:         
 homepage:            https://github.com/cutsea110/owl-auth
@@ -16,23 +16,24 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  extensions:          OverloadedStrings
+  extensions:          OverloadedStrings, PackageImports
   exposed-modules:     Yesod.Auth.Owl, Yesod.Auth.Owl.ChangePass, Yesod.Auth.Owl.Auth, Yesod.Auth.Owl.Util, Yesod.Auth.Owl.Internal.Res
   -- other-modules:       
   build-depends:       base ==4.6.*
                      , yesod ==1.2.*
-                     , yesod-auth ==1.2.*
+                     , yesod-auth ==1.3.*
                      , text ==0.11.*
-                     , conduit ==1.0.*
-                     , http-conduit >= 1.9 && < 2.1
-                     , aeson ==0.6.*
-                     , attoparsec-conduit ==1.0.*
+                     , conduit ==1.1.*
+                     , conduit-extra ==1.1.*
+                     , http-conduit >= 1.9 && < 2.2
+                     , aeson ==0.7.*
+                     , attoparsec-conduit ==1.1.*
                      , bytestring ==0.10.*
                      , yesod-pnotify >= 0.4.2 && < 0.5
                      , crypto-pubkey >= 0.1 && < 0.3
                      , unordered-containers ==0.2.*
                      , utf8-string ==0.3.*
-                     , RSA ==1.2.*
-                     , crypto-api ==0.12.*
+                     , RSA ==2.0.*
+                     , crypto-api ==0.13.*
                      , base64-bytestring ==1.0.*
 

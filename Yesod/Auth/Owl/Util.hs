@@ -11,7 +11,7 @@ module Yesod.Auth.Owl.Util
 
 import qualified Codec.Crypto.RSA as RSA
 import Control.Arrow (first)
-import Crypto.Random
+import "crypto-api" Crypto.Random
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.ByteString.Base64 as Base64

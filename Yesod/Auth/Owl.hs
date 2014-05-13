@@ -51,7 +51,7 @@ authOwl = AuthPlugin "owl" dispatch login
       v <- lift $ owlInteract (AuthReq ident pass) endpoint_auth
       case fromJSON v of
         Success (A.Accepted i e) ->
-          lift $ setCreds True $ Creds "owl" ident []
+          lift $ setCredsRedirect $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
           lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
           redirect LoginR
