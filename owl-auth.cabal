@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  extensions:          OverloadedStrings
+  extensions:          OverloadedStrings, PackageImports
   exposed-modules:     Yesod.Auth.Owl, Yesod.Auth.Owl.ChangePass, Yesod.Auth.Owl.Auth, Yesod.Auth.Owl.Util, Yesod.Auth.Owl.Internal.Res
   -- other-modules:       
   build-depends:       base ==4.6.*
