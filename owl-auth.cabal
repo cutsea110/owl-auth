@@ -19,11 +19,11 @@ library
   extensions:          OverloadedStrings
                      , PackageImports
   exposed-modules:     Yesod.Auth.Owl
-
-  other-modules:       Yesod.Auth.Owl.ChangePass
                      , Yesod.Auth.Owl.Auth
                      , Yesod.Auth.Owl.Util
+                     , Yesod.Auth.Owl.ChangePass
                      , Yesod.Auth.Owl.Internal.Res
+  -- other-modules:
 
   build-depends:       base >=4.6 && <4.9
                      , yesod >=1.2 && <1.5
