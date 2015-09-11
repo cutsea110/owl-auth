@@ -1,6 +1,6 @@
 flags: {}
 packages:
 - '.'
-- '../yesod-pnotify'
-extra-deps: []
+extra-deps:
+- yesod-pnotify-1.1.2
 resolver: lts-3.4
