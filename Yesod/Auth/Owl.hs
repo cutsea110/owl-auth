@@ -21,7 +21,7 @@ import Data.Conduit.Attoparsec (sinkParser)
 import qualified Data.ByteString.Char8 as SB
 import Data.Text (Text)
 import qualified Yesod.Goodies.PNotify as P
-import Crypto.PubKey.RSA
+import "crypto-pubkey" Crypto.PubKey.RSA
 import Yesod.Auth.Owl.Auth as A
 import Yesod.Auth.Owl.ChangePass as CP
 import Yesod.Auth.Owl.Util
@@ -53,7 +53,11 @@ authOwl = AuthPlugin "owl" dispatch login
         Success (A.Accepted i e) ->
           lift $ setCredsRedirect $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
-          lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "login failed" r
+          lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "login failed")
+                                                 , P._text = Just (Right r)
+                                                 , P._type = Just P.Error
+                                                 , P._styling = Just P.JqueryUI
+                                                 }
           redirect LoginR
         Error msg -> invalidArgs [T.pack msg]
     dispatch "GET" ["set-password"] = getPasswordR >>= sendResponse
@@ -109,9 +113,17 @@ postPasswordR = do
   v <- lift $ owlInteract (ChangePassReq uid curp pass pass2) endpoint_pass
   case fromJSON v of
     Success (CP.Accepted i e) -> do
-      lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Success "success" "update password"
+      lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "success")
+                                             , P._text = Just (Right "updated password")
+                                             , P._type = Just P.Success
+                                             , P._styling = Just P.JqueryUI
+                                             }
     Success (CP.Rejected i c p p2 r) -> do
-      lift $ P.setPNotify $ P.PNotify P.JqueryUI P.Error "failed" r
+      lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "failed")
+                                             , P._text = Just (Right r)
+                                             , P._type = Just P.Error
+                                             , P._styling = Just P.JqueryUI
+                                             }
     Error msg -> invalidArgs [T.pack msg]
   lift . redirect . loginDest =<< lift getYesod
 
