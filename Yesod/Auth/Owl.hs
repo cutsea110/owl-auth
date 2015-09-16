@@ -6,6 +6,8 @@ module Yesod.Auth.Owl
        , ServiceURL
        , loginR
        , setPassR
+         -- from import
+       , P.NotifyStyling(..) 
        ) where
 
 import Yesod hiding (object)
