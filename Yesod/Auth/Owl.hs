@@ -43,7 +43,10 @@ setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
 authOwl :: YesodAuthOwl m => AuthPlugin m
-authOwl = AuthPlugin "owl" dispatch login
+authOwl = authOwl' P.JqueryUI
+
+authOwl' :: YesodAuthOwl m => P.NotifyStyling -> AuthPlugin m
+authOwl' style = AuthPlugin "owl" dispatch login
   where
     dispatch "POST" ["login"] = do
       (ident, pass) <- lift $ (,) <$> (runInputPost $ ireq textField "ident")
@@ -56,12 +59,12 @@ authOwl = AuthPlugin "owl" dispatch login
           lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "login failed")
                                                  , P._text = Just (Right r)
                                                  , P._type = Just P.Error
-                                                 , P._styling = Just P.JqueryUI
+                                                 , P._styling = Just style
                                                  }
           redirect LoginR
         Error msg -> invalidArgs [T.pack msg]
     dispatch "GET" ["set-password"] = getPasswordR >>= sendResponse
-    dispatch "POST" ["set-password"] = postPasswordR >>= sendResponse
+    dispatch "POST" ["set-password"] = postPasswordR style >>= sendResponse
     dispatch _ _ = notFound
     login authToParent =
       toWidget [hamlet|
@@ -103,8 +106,8 @@ getPasswordR = do
       <input type=submit .btn.btn-primary value="Set password">
 |]
 
-postPasswordR :: YesodAuthOwl site => HandlerT Auth (HandlerT site IO) ()
-postPasswordR = do
+postPasswordR :: YesodAuthOwl site => P.NotifyStyling -> HandlerT Auth (HandlerT site IO) ()
+postPasswordR style = do
   uid <- getOwlIdent
   (curp, pass, pass2) <- lift $ (,,)
                         <$> (runInputPost $ ireq passwordField "current_pass")
@@ -116,13 +119,13 @@ postPasswordR = do
       lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "success")
                                              , P._text = Just (Right "updated password")
                                              , P._type = Just P.Success
-                                             , P._styling = Just P.JqueryUI
+                                             , P._styling = Just style
                                              }
     Success (CP.Rejected i c p p2 r) -> do
       lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "failed")
                                              , P._text = Just (Right r)
                                              , P._type = Just P.Error
-                                             , P._styling = Just P.JqueryUI
+                                             , P._styling = Just style
                                              }
     Error msg -> invalidArgs [T.pack msg]
   lift . redirect . loginDest =<< lift getYesod
