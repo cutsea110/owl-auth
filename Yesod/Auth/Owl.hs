@@ -1,10 +1,13 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, OverloadedStrings, FlexibleContexts #-}
 module Yesod.Auth.Owl
        ( authOwl
+       , authOwl'
        , YesodAuthOwl(..)
        , ServiceURL
        , loginR
        , setPassR
+         -- from import
+       , P.NotifyStyling(..) 
        ) where
 
 import Yesod hiding (object)
