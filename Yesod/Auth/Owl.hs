@@ -4,7 +4,7 @@ module Yesod.Auth.Owl
        , authOwl'
        , YesodAuthOwl(..)
        , ServiceURL
-       , ClientID(..)
+       , ClientID
        , PublicKey(..)
        , PrivateKey(..)
        , loginR
