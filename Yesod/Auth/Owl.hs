@@ -60,10 +60,15 @@ authOwl' style = AuthPlugin "owl" dispatch login
                            <*> (runInputPost $ ireq passwordField "password")
       v <- lift $ owlInteract (AuthReq ident pass) endpoint_auth
       case fromJSON v of
-        Success (A.Accepted i e) ->
+        Success (A.Accepted i e) -> do
+          lift $ P.setPNotify P.defaultPNotify { P._title = Just (Right "Welcome!")
+                                               , P._text = Just (Right "succeed to login")
+                                               , P._type = Just P.Success
+                                               , P._styling = Just style
+                                               }
           lift $ setCredsRedirect $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
-          lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "login failed")
+          lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "Oops!")
                                                  , P._text = Just (Right r)
                                                  , P._type = Just P.Error
                                                  , P._styling = Just style
