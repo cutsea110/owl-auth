@@ -50,10 +50,10 @@ setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
 authOwl :: YesodAuthOwl m => AuthPlugin m
-authOwl = authOwl' P.JqueryUI
+authOwl = authOwl' P.defaultPNotify { P._styling = Just P.JqueryUI }
 
-authOwl' :: YesodAuthOwl m => P.NotifyStyling -> AuthPlugin m
-authOwl' style = AuthPlugin "owl" dispatch login
+authOwl' :: YesodAuthOwl m => P.PNotify -> AuthPlugin m
+authOwl' def = AuthPlugin "owl" dispatch login
   where
     dispatch "POST" ["login"] = do
       (ident, pass) <- lift $ (,) <$> (runInputPost $ ireq textField "ident")
@@ -61,22 +61,20 @@ authOwl' style = AuthPlugin "owl" dispatch login
       v <- lift $ owlInteract (AuthReq ident pass) endpoint_auth
       case fromJSON v of
         Success (A.Accepted i e) -> do
-          lift $ P.setPNotify P.defaultPNotify { P._title = Just (Right "Welcome!")
-                                               , P._text = Just (Right "succeed to login")
-                                               , P._type = Just P.Success
-                                               , P._styling = Just style
-                                               }
+          lift $ P.setPNotify def { P._title = Just (Right "Welcome!")
+                                  , P._text = Just (Right "succeed to login")
+                                  , P._type = Just P.Success
+                                  }
           lift $ setCredsRedirect $ Creds "owl" ident []
         Success (A.Rejected i p r) -> do
-          lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "Oops!")
-                                                 , P._text = Just (Right r)
-                                                 , P._type = Just P.Error
-                                                 , P._styling = Just style
-                                                 }
+          lift $ P.setPNotify def { P._title = Just (Right "Oops!")
+                                  , P._text = Just (Right r)
+                                  , P._type = Just P.Error
+                                  }
           redirect LoginR
         Error msg -> invalidArgs [T.pack msg]
     dispatch "GET" ["set-password"] = getPasswordR >>= sendResponse
-    dispatch "POST" ["set-password"] = postPasswordR style >>= sendResponse
+    dispatch "POST" ["set-password"] = postPasswordR def >>= sendResponse
     dispatch _ _ = notFound
     login authToParent =
       toWidget [hamlet|
@@ -118,8 +116,8 @@ getPasswordR = do
       <input type=submit .btn.btn-primary value="Set password">
 |]
 
-postPasswordR :: YesodAuthOwl site => P.NotifyStyling -> HandlerT Auth (HandlerT site IO) ()
-postPasswordR style = do
+postPasswordR :: YesodAuthOwl site => P.PNotify -> HandlerT Auth (HandlerT site IO) ()
+postPasswordR def = do
   uid <- getOwlIdent
   (curp, pass, pass2) <- lift $ (,,)
                         <$> (runInputPost $ ireq passwordField "current_pass")
@@ -128,17 +126,15 @@ postPasswordR style = do
   v <- lift $ owlInteract (ChangePassReq uid curp pass pass2) endpoint_pass
   case fromJSON v of
     Success (CP.Accepted i e) -> do
-      lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "success")
-                                             , P._text = Just (Right "updated password")
-                                             , P._type = Just P.Success
-                                             , P._styling = Just style
-                                             }
+      lift $ P.setPNotify def { P._title = Just (Right "success")
+                              , P._text = Just (Right "updated password")
+                              , P._type = Just P.Success
+                              }
     Success (CP.Rejected i c p p2 r) -> do
-      lift $ P.setPNotify $ P.defaultPNotify { P._title = Just (Right "failed")
-                                             , P._text = Just (Right r)
-                                             , P._type = Just P.Error
-                                             , P._styling = Just style
-                                             }
+      lift $ P.setPNotify def { P._title = Just (Right "failed")
+                              , P._text = Just (Right r)
+                              , P._type = Just P.Error
+                              }
     Error msg -> invalidArgs [T.pack msg]
   lift . redirect . loginDest =<< lift getYesod
 
