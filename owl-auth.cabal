@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                owl-auth
-version:             0.5.1
+version:             0.5.2
 synopsis:            API for owl authentication
 -- description:         
 homepage:            https://github.com/cutsea110/owl-auth

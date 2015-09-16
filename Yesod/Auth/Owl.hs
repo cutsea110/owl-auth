@@ -4,6 +4,9 @@ module Yesod.Auth.Owl
        , authOwl'
        , YesodAuthOwl(..)
        , ServiceURL
+       , ClientID
+       , PublicKey(..)
+       , PrivateKey(..)
        , loginR
        , setPassR
          -- from import
@@ -30,10 +33,11 @@ import Yesod.Auth.Owl.ChangePass as CP
 import Yesod.Auth.Owl.Util
 
 type ServiceURL = String
+type ClientID = SB.ByteString
 
 class YesodAuth site => YesodAuthOwl site where
   getOwlIdent :: HandlerT Auth (HandlerT site IO) Text
-  clientId :: site -> SB.ByteString
+  clientId :: site -> ClientID
   owlPubkey :: site -> PublicKey
   myPrivkey :: site -> PrivateKey
   endpoint_auth :: site -> ServiceURL
