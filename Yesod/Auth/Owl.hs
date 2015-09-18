@@ -43,6 +43,23 @@ class YesodAuth site => YesodAuthOwl site where
   endpoint_auth :: site -> ServiceURL
   endpoint_pass :: site -> ServiceURL
 
+  mkLoginWidget :: site -> (AuthRoute -> Route site) -> WidgetT site IO ()
+  mkLoginWidget site = \authToParent -> [whamlet|
+<form method="post" action="@{authToParent loginR}" .form-horizontal>
+  <div .control-group.info>
+    <label .control-label for=ident>Owl Account ID
+    <div .controls>
+      <input type=text #ident name=ident .span3 autofocus="" required>
+  <div .control-group.info>
+    <label .control-label for=ident>Owl Password
+    <div .controls>
+      <input type=password #password name=password .span3 required>
+  <div .control-group>
+    <div .controls.btn-group>
+      <input type=submit .btn.btn-primary value=Login>
+|]
+
+
 loginR :: AuthRoute
 loginR = PluginR "owl" ["login"]
 
@@ -50,7 +67,7 @@ setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
 authOwl :: YesodAuthOwl m => AuthPlugin m
-authOwl = authOwl' P.defaultPNotify { P._styling = Just P.JqueryUI }
+authOwl = authOwl' (P.defaultPNotify { P._styling = Just P.JqueryUI })
 
 authOwl' :: YesodAuthOwl m => P.PNotify -> AuthPlugin m
 authOwl' def = AuthPlugin "owl" dispatch login
@@ -76,21 +93,9 @@ authOwl' def = AuthPlugin "owl" dispatch login
     dispatch "GET" ["set-password"] = getPasswordR >>= sendResponse
     dispatch "POST" ["set-password"] = postPasswordR def >>= sendResponse
     dispatch _ _ = notFound
-    login authToParent =
-      toWidget [hamlet|
-<form method="post" action="@{authToParent loginR}" .form-horizontal>
-  <div .control-group.info>
-    <label .control-label for=ident>Owl Account ID
-    <div .controls>
-      <input type=text #ident name=ident .span3 autofocus="" required>
-  <div .control-group.info>
-    <label .control-label for=ident>Owl Password
-    <div .controls>
-      <input type=password #password name=password .span3 required>
-  <div .control-group>
-    <div .controls.btn-group>
-      <input type=submit .btn.btn-primary value=Login>
-|]
+    login authToParent = do
+      y <- getYesod
+      mkLoginWidget y authToParent
 
 getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) Html
 getPasswordR = do
