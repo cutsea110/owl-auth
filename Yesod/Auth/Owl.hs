@@ -44,7 +44,7 @@ class YesodAuth site => YesodAuthOwl site where
   endpoint_pass :: site -> ServiceURL
 
   mkLoginWidget :: site -> (AuthRoute -> Route site) -> WidgetT site IO ()
-  mkLoginWidget site = \authToParent -> [whamlet|
+  mkLoginWidget _ = \authToParent -> [whamlet|
 <form method="post" action="@{authToParent loginR}" .form-horizontal>
   <div .control-group.info>
     <label .control-label for=ident>Owl Account ID
