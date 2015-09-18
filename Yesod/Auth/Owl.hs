@@ -43,8 +43,8 @@ class YesodAuth site => YesodAuthOwl site where
   endpoint_auth :: site -> ServiceURL
   endpoint_pass :: site -> ServiceURL
 
-  routeToWidget :: site -> Route m -> WidgetT m IO ()
-  routeToWidget site = \action -> [whamlet|
+  mkLoginWidget :: site -> Route m -> WidgetT m IO ()
+  mkLoginWidget site = \action -> [whamlet|
 <form method="post" action="@{action}" .form-horizontal>
   <div .control-group.info>
     <label .control-label for=ident>Owl Account ID
@@ -95,7 +95,7 @@ authOwlWithForm def = AuthPlugin "owl" dispatch login
     dispatch _ _ = notFound
     login authToParent = do
       y <- getYesod
-      routeToWidget y $ authToParent loginR
+      mkLoginWidget y $ authToParent loginR
 
 getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) Html
 getPasswordR = do
