@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, OverloadedStrings, FlexibleContexts #-}
 module Yesod.Auth.Owl
        ( authOwl
-       , authOwlWithForm
+       , authOwl'
        , YesodAuthOwl(..)
        , ServiceURL
        , ClientID
@@ -43,9 +43,9 @@ class YesodAuth site => YesodAuthOwl site where
   endpoint_auth :: site -> ServiceURL
   endpoint_pass :: site -> ServiceURL
 
-  mkLoginWidget :: site -> Route m -> WidgetT m IO ()
-  mkLoginWidget site = \action -> [whamlet|
-<form method="post" action="@{action}" .form-horizontal>
+  mkLoginWidget :: site -> (AuthRoute -> Route site) -> WidgetT site IO ()
+  mkLoginWidget site = \authToParent -> [whamlet|
+<form method="post" action="@{authToParent loginR}" .form-horizontal>
   <div .control-group.info>
     <label .control-label for=ident>Owl Account ID
     <div .controls>
@@ -67,10 +67,10 @@ setPassR :: AuthRoute
 setPassR = PluginR "owl" ["set-password"]
 
 authOwl :: YesodAuthOwl m => AuthPlugin m
-authOwl = authOwlWithForm (P.defaultPNotify { P._styling = Just P.JqueryUI })
+authOwl = authOwl' (P.defaultPNotify { P._styling = Just P.JqueryUI })
 
-authOwlWithForm :: YesodAuthOwl m => P.PNotify -> AuthPlugin m
-authOwlWithForm def = AuthPlugin "owl" dispatch login
+authOwl' :: YesodAuthOwl m => P.PNotify -> AuthPlugin m
+authOwl' def = AuthPlugin "owl" dispatch login
   where
     dispatch "POST" ["login"] = do
       (ident, pass) <- lift $ (,) <$> (runInputPost $ ireq textField "ident")
@@ -95,7 +95,7 @@ authOwlWithForm def = AuthPlugin "owl" dispatch login
     dispatch _ _ = notFound
     login authToParent = do
       y <- getYesod
-      mkLoginWidget y $ authToParent loginR
+      mkLoginWidget y authToParent
 
 getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) Html
 getPasswordR = do
