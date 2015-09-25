@@ -58,6 +58,25 @@ class YesodAuth site => YesodAuthOwl site where
     <div .controls.btn-group>
       <input type=submit .btn.btn-primary value=Login>
 |]
+  mkChangePasswordWidget :: site -> (AuthRoute -> Route site) -> WidgetT site IO ()
+  mkChangePasswordWidget _ = \authToParent -> [whamlet|
+<form method="post" action="@{authToParent setPassR}" .form-horizontal>
+  <div .control-group.info>
+    <label .control-label for=current_pass>Current Password
+    <div .controls>
+      <input type=password #current_pass name=current_pass .span3 autofocus="" required>
+  <div .control-group.info>
+    <label .control-label for=new_pass>New Password
+    <div .controls>
+      <input type=password #new_pass name=new_pass .span3 required>
+  <div .control-group.info>
+    <label .control-label for=new_pass2>Confirm
+    <div .controls>
+      <input type=password #new_pass2 name=new_pass2 .span3 required>
+  <div .control-group>
+    <div .controls.btn-group>
+      <input type=submit .btn.btn-primary value="Set password">
+|]
 
 
 loginR :: AuthRoute
@@ -97,29 +116,13 @@ authOwl' def = AuthPlugin "owl" dispatch login
       y <- getYesod
       mkLoginWidget y authToParent
 
-getPasswordR :: Yesod site => HandlerT Auth (HandlerT site IO) Html
+getPasswordR :: YesodAuthOwl site => HandlerT Auth (HandlerT site IO) Html
 getPasswordR = do
   authToParent <- getRouteToParent
   lift $ defaultLayout $ do
+    y <- getYesod
     setTitle "Set password"
-    [whamlet|
-<form method="post" action="@{authToParent setPassR}" .form-horizontal>
-  <div .control-group.info>
-    <label .control-label for=current_pass>Current Password
-    <div .controls>
-      <input type=password #current_pass name=current_pass .span3 autofocus="" required>
-  <div .control-group.info>
-    <label .control-label for=new_pass>New Password
-    <div .controls>
-      <input type=password #new_pass name=new_pass .span3 required>
-  <div .control-group.info>
-    <label .control-label for=new_pass2>Confirm
-    <div .controls>
-      <input type=password #new_pass2 name=new_pass2 .span3 required>
-  <div .control-group>
-    <div .controls.btn-group>
-      <input type=submit .btn.btn-primary value="Set password">
-|]
+    mkChangePasswordWidget y authToParent
 
 postPasswordR :: YesodAuthOwl site => P.PNotify -> HandlerT Auth (HandlerT site IO) ()
 postPasswordR def = do
